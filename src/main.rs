@@ -12,11 +12,26 @@ impl Person {
     }
 }
 
-fn main() {
+// quick way to get float values from user
+fn get_float(prompt: String) -> f32 {
+	let result = loop {
+		println!("\n{}", prompt);
+		
+		let mut input = String::new();	// this will be the input from user
+		if io::stdin().read_line(&mut input).is_ok() {	// only returns input if there is no error
+			if let Ok(result) = input.trim().parse::<f32>() {
+				break result;
+			} else {println!("That didn't work, try again")}
+		} else {println!("That didn't work, try again")}
+	};
+	result
+}
 
-	// collect list of names in form "Name 1, Name2, name3,name4"
+// collect list of names in form "Name 1, Name2, name3,name4"
+fn get_names(prompt: String) -> Vec<String> {
+	
 	let names: Vec<String> = loop {
-		println!("Please list the names of everyone to split with seperated by commas.");	// promt user for input
+		println!("{}", prompt);	// promt user for input
 
 		let mut input = String::new();	// this will be the input from user
 		if io::stdin().read_line(&mut input).is_ok() {	// only returns input if there is no error
@@ -25,32 +40,12 @@ fn main() {
         } else {println!("That didn't work, try again")}
 		
     };
-    
-    let subtotal = loop {
-    	println!("\nWhat was the subtotal (pre tax/tip)?");
-    	
-    	let mut input = String::new();	// this will be the input from user
-    	if io::stdin().read_line(&mut input).is_ok() {	// only returns input if there is no error
-    		if let Ok(subtotal) = input.trim().parse::<f32>() {
-    			break subtotal;
-    		} else {println!("That didn't work, try again")}
-    	} else {println!("That didn't work, try again")}
-    };
-    
-    let total = loop {
-    	println!("\nWhat was the total (after tax/tip)?");
-    	
-    	let mut input = String::new();	// this will be the input from user
-    	if io::stdin().read_line(&mut input).is_ok() {	// only returns input if there is no error
-    		if let Ok(total) = input.trim().parse::<f32>() {
-    			break total;
-    		} else {println!("That didn't work, try again")}
-    	} else {println!("That didn't work, try again")}
-    };
-    
-    let mut everyone: Vec<Person> = Vec::new();	// placeholder for later
-   	let mut subtotal_counter = subtotal.clone();	// counter for error check later
-   	
+    names
+}
+
+// Creates a vector full of everyone 
+fn get_everyone(names: Vec<String>, subtotal: f32, total: f32, mut everyone: Vec<Person>, mut subtotal_counter: f32) -> Vec<Person> {
+
    	loop {
 		for name in &names{
 			
@@ -77,9 +72,23 @@ fn main() {
 		if subtotal_counter >= 0.0 {break;} else {println!("\nThe cost has exceeded the subtotal! Lets try again.")}	// quick error check to see if the total is too large
     }
     
+    everyone
+    
+}
+
+fn main() {
+
+	let names = get_names("Please list the names of everyone to split with seperated by commas.".to_string());
+    let subtotal = get_float("What was the subtotal (pre tax/tip)?".to_string());
+    let total = get_float("What was the total (after tax/tip)?".to_string());
+
+	let everyone = get_everyone(names, subtotal, total, Vec::new(), subtotal.clone());
+    
     // print all the results
+    println!("");
     for individual in everyone {
     	individual.print();
     }
+    println!("");
     
 }
