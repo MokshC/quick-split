@@ -13,7 +13,7 @@ impl Person {
 }
 
 // quick way to get float values from user
-fn get_float(prompt: String) -> f32 {
+fn get_float(prompt: &str) -> f32 {
 	let result = loop {
 		println!("\n{}", prompt);
 		
@@ -28,7 +28,7 @@ fn get_float(prompt: String) -> f32 {
 }
 
 // collect list of names in form "Name 1, Name2, name3,name4"
-fn get_names(prompt: String) -> Vec<String> {
+fn get_names(prompt: &str) -> Vec<String> {
 	
 	let names: Vec<String> = loop {
 		println!("{}", prompt);	// promt user for input
@@ -78,9 +78,9 @@ fn get_everyone(names: Vec<String>, subtotal: f32, total: f32, mut everyone: Vec
 
 fn main() {
 
-	let names = get_names("Please list the names of everyone to split with seperated by commas.".to_string());
-    let subtotal = get_float("What was the subtotal (pre tax/tip)?".to_string());
-    let total = get_float("What was the total (after tax/tip)?".to_string());
+	let names = get_names("Please list the names of everyone to split with seperated by commas.");
+    let subtotal = get_float("What was the subtotal (pre tax/tip)?");
+    let total = get_float("What was the total (after tax/tip)?");
 
 	let everyone = get_everyone(names, subtotal, total, Vec::new(), subtotal.clone());
     
