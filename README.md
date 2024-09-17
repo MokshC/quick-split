@@ -1,5 +1,5 @@
 # How to download it
-Click [Releases][https://github.com/MokshC/quick-split/releases] in this repo, and download the newest one for your system
+Click [Releases](https://github.com/MokshC/quick-split/releases) in this repo, and download the newest one for your system
 
 # How to use it
 1. Open Terminal (or CMD on windows) at the location of quick-split
