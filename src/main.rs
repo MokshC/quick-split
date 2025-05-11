@@ -1,5 +1,17 @@
 use std::io;
 
+struct SplitLine {
+    item: Person,
+    people: Vec<String>,
+}
+
+impl SplitLine {
+    fn cost(&self) -> f32 {
+        let divider = self.people.len() as f32;
+        self.item.total_owed / divider
+    }
+}
+
 // simple struct to make storing and printing results easier
 struct Person {
     name: String,
@@ -10,6 +22,9 @@ impl Person {
     fn print(&self) {
         // print with rounding!
         println!("{}'s split is {:.2}", self.name, self.total_owed);
+    }
+    fn line(&self) {
+        println!("{:<15} {:>10.2}", self.name, self.total_owed);
     }
 }
 
@@ -50,57 +65,144 @@ fn get_names(prompt: &str) -> Vec<String> {
     names
 }
 
-// Creates a vector full of everyone
-fn get_everyone(
-    names: Vec<String>,
-    subtotal: f32,
-    total: f32,
-    mut everyone: Vec<Person>,
-    mut subtotal_counter: f32,
-) -> Vec<Person> {
-    loop {
-        for name in &names {
-            let sub_owed = loop {
-                println!("\nHow much did {} pay pre tax/tip?", &name);
+// Created a vector full of line items
+fn get_bill(items: Vec<String>) -> Vec<Person> {
+    let mut bill: Vec<Person> = Vec::new();
 
-                let mut input = String::new(); // this will be the input from user
-                if io::stdin().read_line(&mut input).is_ok() {
-                    // only returns input if there is no error
-                    if let Ok(sub_owed) = input.trim().parse::<f32>() {
-                        break sub_owed;
-                    } else {
-                        println!("That didn't work, try again")
-                    }
+    for item in &items {
+        let price = loop {
+            println!("\nHow much was {} pre tax/tip?", &item);
+
+            let mut input = String::new(); // this will be the input from user
+            if io::stdin().read_line(&mut input).is_ok() {
+                // only returns input if there is no error
+                if let Ok(price) = input.trim().parse::<f32>() {
+                    break price;
                 } else {
                     println!("That didn't work, try again")
                 }
-            };
+            } else {
+                println!("That didn't work, try again")
+            }
+        };
+        let line_item = Person {
+            name: String::from(item),
+            total_owed: price,
+        };
+        bill.push(line_item)
+    }
+    bill
+}
 
-            subtotal_counter -= sub_owed; // counter for later
+fn bill_print(bill: &Vec<Person>, subtotal: &f32, total: &f32) {
+    println!("\n{:-<26}", ""); // Print a line separator
+    for line_item in bill {
+        line_item.line();
+    }
+    println!("{:-<26}", ""); // Print a line separator
+    println!("Subtotal {:>17.2}", subtotal);
+    println!("Total {:>20.2}", total);
+    println!("{:-<26}\n", ""); // Print a line separator
+}
 
-            // creates a new person and adds to vector of all people
-            let new_person = Person {
-                name: String::from(name),
-                total_owed: (sub_owed / subtotal) * total,
-            };
-            everyone.push(new_person);
+// Takes user input yes or no and returns bool
+fn yes_or_no() -> bool {
+    let response = loop {
+        let mut input = String::new(); // this will be the input from user
+        if io::stdin().read_line(&mut input).is_ok() {
+            // Check if the user wants to confirm the bill
+            let input = input.trim();
+            if input.to_lowercase() == "y" || input.to_lowercase() == "yes" {
+                break true;
+            } else if input.to_lowercase() == "n" || input.to_lowercase() == "no" {
+                break false;
+            } else {
+                // I'd like to ask for y/n again but too lazy right now
+                println!("Invalid response. Please enter y or n.");
+                continue;
+            }
         }
-        if subtotal_counter >= 0.0 {
-            break;
+    };
+    response
+}
+
+fn bill_loop() -> (Vec<Person>, f32) {
+    loop {
+        // First we recreate the bill
+        let items = get_names("Please list every line item on the bill seperated by commas.");
+        let bill = get_bill(items); // this combines items and prices
+
+        // then we get the total prices
+        let subtotal = get_float("What was the subtotal (pre tax/tip)?");
+        let total = get_float("What was the total (after tax/tip)?");
+
+        bill_print(&bill, &subtotal, &total);
+        println!("Does that bill look right to you? (y/n)");
+
+        if yes_or_no() {
+            return (bill, total);
         } else {
-            println!("\nThe cost has exceeded the subtotal! Lets try again.")
-        } // quick error check to see if the total is too large
+            continue;
+        }
+    }
+}
+
+// Creates a vector full of everyone
+fn get_everyone(names: Vec<String>, total: f32, bill: Vec<Person>) -> Vec<Person> {
+    // get the true subtotal from items entered
+    let mut true_sub: f32 = 0.0;
+    for item in &bill {
+        true_sub += item.total_owed;
+    }
+
+    println!("\nNow lets see what everyone had.");
+
+    let mut matrix: Vec<SplitLine> = Vec::new();
+    for item in bill {
+        let mut people: Vec<String> = Vec::new();
+        for name in &names {
+            println!("\nDid {} have some {}? (y/n)", name, item.name);
+            if yes_or_no() {
+                people.push(name.to_string());
+            }
+        }
+        let new_line = SplitLine {
+            item: item,
+            people: people,
+        };
+        matrix.push(new_line);
+    }
+
+    let mut everyone: Vec<Person> = Vec::new();
+    for name in &names {
+        // creates a new person and adds to vector of all people
+        let new_person = Person {
+            name: String::from(name),
+            total_owed: 0.0,
+        };
+        everyone.push(new_person);
+    }
+
+    for line in matrix {
+        for person_name in line.people.clone() {
+            for individual in &mut everyone {
+                if individual.name == person_name {
+                    individual.total_owed += (line.cost() / true_sub) * total;
+                }
+            }
+        }
     }
 
     everyone
 }
 
 fn main() {
-    let names = get_names("Please list the names of everyone to split with seperated by commas.");
-    let subtotal = get_float("What was the subtotal (pre tax/tip)?");
-    let total = get_float("What was the total (after tax/tip)?");
+    let (bill, total) = bill_loop();
 
-    let everyone = get_everyone(names, subtotal, total, Vec::new(), subtotal.clone());
+    // Now we see who bought what
+    let names = get_names("\nPlease list the names of everyone to split with seperated by commas.");
+
+    let everyone = get_everyone(names, total, bill);
 
     // print all the results
     println!("");
