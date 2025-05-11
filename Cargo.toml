@@ -1,4 +1,4 @@
 [package]
 name = "quick-split"
 version = "2.0.0"
-edition = "2025"
+edition = "2024"
